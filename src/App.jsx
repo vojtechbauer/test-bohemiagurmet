@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe('pk_test_51OazEfHvkdt7UEbYnEQ3rSSp0p8B7Hi3GViUXB3Fej4x6oqMCpY0pFx30KWq2glAfraqM5ghRfr2E0fl26QteOVm00K1SOLXWH');
 
 const CATEGORIES = ['Vše', 'Pekárna', 'Maso', 'Mléčné výrobky', 'Zahrada', 'Spíž'];
 
@@ -45,7 +45,7 @@ function App() {
   const ADMIN_PASSWORD = 'bohemia2026';
 
   useEffect(() => {
-    console.log("Firebase initialized with project:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
+    console.log("Firebase initialized with project: test-bohemiafood");
     
     const checkAndSeed = async () => {
       const querySnapshot = await getDocs(collection(db, "products"));
