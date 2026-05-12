@@ -63,7 +63,7 @@ function App() {
     setIsAiLoading(true);
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       const prompt = `Jsi asistent luxusního českého e-shopu Bohemia Gourmet. Odpovídej česky, zdvořile a prémiově. 
       Naše produkty: ${products.map(p => p.name).join(', ')}. 
       Uživatel se ptá: ${userInput}`;
