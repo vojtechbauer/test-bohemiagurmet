@@ -451,7 +451,16 @@
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.error-box {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: #fff5f5;
+  color: #c53030;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #feb2b2;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
 }

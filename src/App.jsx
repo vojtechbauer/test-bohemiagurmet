@@ -3,45 +3,16 @@ import { loadStripe } from '@stripe/stripe-js';
 import { 
   ShoppingCart, Menu, X, ChevronRight, Star, Heart, 
   MapPin, Users, Info, ArrowRight, CheckCircle2, 
-  Settings, Plus, Trash2, Edit2, Save, Package, CreditCard, Truck, Loader2
+  Settings, Plus, Trash2, Edit2, Save, Package, CreditCard, Truck, Loader2, AlertCircle
 } from 'lucide-react';
 import './App.css';
 
-// Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-// Initial Mock Data
 const INITIAL_PRODUCTS = [
-  {
-    id: 1,
-    name: 'Kváskový chléb Sklizeň',
-    price: 65,
-    producer: 'Pekařství Krusta',
-    image: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?q=80&w=1000&auto=format&fit=crop',
-    category: 'Pekárna',
-    origin: 'Praha',
-    stock: 24
-  },
-  {
-    id: 2,
-    name: 'Čerstvé farmářské mléko',
-    price: 42,
-    producer: 'Farma u Dubu',
-    image: 'https://images.unsplash.com/photo-1550583724-125581cc2532?q=80&w=1000&auto=format&fit=crop',
-    category: 'Mléčné výrobky',
-    origin: 'Šumava',
-    stock: 15
-  },
-  {
-    id: 3,
-    name: 'Lesní med výběrový',
-    price: 245,
-    producer: 'Včelařství Novák',
-    image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=1000&auto=format&fit=crop',
-    category: 'Spíž',
-    origin: 'Beskydy',
-    stock: 40
-  }
+  { id: 1, name: 'Kváskový chléb Sklizeň', price: 65, producer: 'Pekařství Krusta', image: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?q=80&w=1000&auto=format&fit=crop', category: 'Pekárna', stock: 24 },
+  { id: 2, name: 'Čerstvé farmářské mléko', price: 42, producer: 'Farma u Dubu', image: 'https://images.unsplash.com/photo-1550583724-125581cc2532?q=80&w=1000&auto=format&fit=crop', category: 'Mléčné výrobky', stock: 15 },
+  { id: 3, name: 'Lesní med výběrový', price: 245, producer: 'Včelařství Novák', image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=1000&auto=format&fit=crop', category: 'Spíž', stock: 40 }
 ];
 
 const CATEGORIES = ['Vše', 'Pekárna', 'Maso', 'Mléčné výrobky', 'Zahrada', 'Spíž'];
@@ -55,12 +26,12 @@ function App() {
   const [activeCategory, setActiveCategory] = useState('Vše');
   const [editingProduct, setEditingProduct] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     
-    // Check for success URL params
     const query = new URLSearchParams(window.location.search);
     if (query.get('success')) {
       setView('success');
@@ -75,35 +46,41 @@ function App() {
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (index) => {
-    const newCart = [...cart];
-    newCart.splice(index, 1);
-    setCart(newCart);
-  };
-
   const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
   const handleStripeCheckout = async () => {
     setIsProcessing(true);
-    const stripe = await stripePromise;
+    setCheckoutError(null);
 
     try {
-      const response = await fetch('http://localhost:4242/create-checkout-session', {
+      // Robust call via Vite Proxy (/api/...)
+      const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cart, origin: window.location.origin }),
+        body: JSON.stringify({ 
+          items: cart, 
+          origin: window.location.origin 
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Server neodpovídá správně.');
+      }
 
       const session = await response.json();
 
       if (session.url) {
         window.location.href = session.url;
       } else {
-        alert('Chyba: Server nevrátil platební URL.');
+        throw new Error('Server nevrátil platební odkaz.');
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Chyba při propojování se Stripe. Ujistěte se, že běží server.js');
+      setCheckoutError(error.message === 'Failed to fetch' 
+        ? 'Backend server neběží. Spusťte prosím Spustit_Eshop.bat' 
+        : error.message
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -139,10 +116,7 @@ function App() {
                   <button className="add-to-cart-overlay" onClick={() => addToCart(product)}>Do košíku</button>
                 </div>
                 <div className="product-info">
-                  <div className="product-meta">
-                    <span className="category-tag">{product.category}</span>
-                    <span className="stock-tag">Skladem: {product.stock}ks</span>
-                  </div>
+                  <div className="product-meta"><span className="category-tag">{product.category}</span><span className="stock-tag">{product.stock}ks</span></div>
                   <h3>{product.name}</h3>
                   <p className="producer">{product.producer}</p>
                   <div className="product-footer"><span className="price">{product.price} Kč</span></div>
@@ -161,7 +135,7 @@ function App() {
         <div className="checkout-form-section">
           <h2>Pokladna</h2>
           <div className="checkout-info">
-            <p>Budete přesměrováni na zabezpečenou platební bránu Stripe.</p>
+            <p>Přesměrujeme vás na zabezpečenou bránu Stripe.</p>
             <div className="shipping-methods">
               <div className="method-card active">
                 <Truck size={20} />
@@ -169,6 +143,14 @@ function App() {
                 <span>99 Kč</span>
               </div>
             </div>
+
+            {checkoutError && (
+              <div className="error-box">
+                <AlertCircle size={20} />
+                <span>{checkoutError}</span>
+              </div>
+            )}
+
             <button className="pay-button" onClick={handleStripeCheckout} disabled={isProcessing}>
               {isProcessing ? <><Loader2 className="animate-spin" /> Přesměrovávám...</> : `Zaplatit ${totalPrice + 99} Kč přes Stripe`}
             </button>
@@ -191,7 +173,7 @@ function App() {
       <div className="success-card">
         <CheckCircle2 size={80} color="var(--accent)" />
         <h2>Platba byla úspěšná!</h2>
-        <p>Právě jsme začali připravovat vaši objednávku. Platbu uvidíte ve svém výpisu i ve Stripe dashboardu.</p>
+        <p>Děkujeme. Platbu nyní uvidíte ve svém Stripe dashboardu.</p>
         <button className="cta-button" onClick={() => { setView('shop'); window.history.replaceState({}, document.title, "/"); }}>Zpět do obchodu</button>
       </div>
     </section>
@@ -199,10 +181,7 @@ function App() {
 
   const renderAdmin = () => (
     <section className="admin-view container fade-in">
-      <div className="admin-header">
-        <h1>Admin panel</h1>
-        <button className="add-btn" onClick={() => setEditingProduct({})}><Plus size={20} /> Přidat</button>
-      </div>
+      <div className="admin-header"><h1>Admin</h1><button className="add-btn" onClick={() => setEditingProduct({})}>Přidat</button></div>
       <div className="admin-table">
         {products.map(p => (
           <div key={p.id} className="table-row">
@@ -223,10 +202,7 @@ function App() {
     <div className="app">
       <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
         <div className="container nav-content">
-          <div className="logo" onClick={() => setView('shop')} style={{cursor: 'pointer'}}>
-            <span className="logo-main">BOHEMIA</span>
-            <span className="logo-sub">GOURMET</span>
-          </div>
+          <div className="logo" onClick={() => setView('shop')} style={{cursor: 'pointer'}}><span className="logo-main">BOHEMIA</span><span className="logo-sub">GOURMET</span></div>
           <div className="nav-links">
             <button className="admin-link" onClick={() => setView(view === 'admin' ? 'shop' : 'admin')}>Admin</button>
           </div>
@@ -249,17 +225,12 @@ function App() {
         <div className="cart-items">
           {cart.map((item, idx) => (
             <div key={idx} className="cart-item">
-              <img src={item.image} alt="" />
-              <div className="cart-item-info"><h4>{item.name}</h4><p>{item.price} Kč</p></div>
-              <button onClick={() => removeFromCart(idx)}><Trash2 size={16} /></button>
+              <img src={item.image} alt="" /><div className="cart-item-info"><h4>{item.name}</h4><p>{item.price} Kč</p></div>
+              <button onClick={() => { const n = [...cart]; n.splice(idx,1); setCart(n); }}><Trash2 size={16} /></button>
             </div>
           ))}
         </div>
-        {cart.length > 0 && (
-          <div className="cart-footer">
-            <button className="checkout-btn" onClick={() => { setView('checkout'); setIsCartOpen(false); }}>Zaplatit {totalPrice} Kč</button>
-          </div>
-        )}
+        {cart.length > 0 && <div className="cart-footer"><button className="checkout-btn" onClick={() => { setView('checkout'); setIsCartOpen(false); }}>Zaplatit {totalPrice} Kč</button></div>}
       </div>
       <div className={`overlay ${isCartOpen ? 'visible' : ''}`} onClick={() => setIsCartOpen(false)}></div>
     </div>
