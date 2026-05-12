@@ -29,6 +29,43 @@
   width: 100%;
 }
 
+.mobile-menu-btn {
+  display: none;
+  color: var(--text-dark);
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn { display: block; }
+  
+  .nav-links {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 80%;
+    background: white;
+    z-index: 6000;
+    display: flex;
+    flex-direction: column;
+    padding: 4rem 2rem;
+    gap: 2rem;
+    transform: translateX(-100%);
+    transition: var(--transition);
+  }
+  
+  .nav-links.mobile-open {
+    transform: translateX(0);
+    display: flex;
+  }
+
+  .close-menu {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    color: var(--text-dark);
+  }
+}
+
 .logo {
   display: flex;
   flex-direction: column;
@@ -360,95 +397,166 @@
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Responsive */
-@media (max-width: 992px) {
-  .checkout-grid { grid-template-columns: 1fr; }
-  .table-header, .table-row { grid-template-columns: 1.5fr 1fr 1fr; }
-  .table-header span:nth-child(2), .table-row span:nth-child(2), .table-header span:nth-child(3), .table-row span:nth-child(3) { display: none; }
-  .cart-drawer { width: 100%; }
+/* Responsive Optimizations */
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 2.8rem;
+  }
+  
+  .nav-links {
+    display: none; /* Hide desktop links */
+  }
+  
+  .nav-content {
+    padding: 0 1.5rem;
+  }
+
+  .logo-main {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .checkout-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .cart-drawer {
+    width: 100%;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .table-header, .table-row {
+    grid-template-columns: 2fr 1fr 1fr;
+    font-size: 0.9rem;
+    padding: 1rem;
+  }
+  
+  .table-header span:nth-child(2), 
+  .table-row span:nth-child(2) {
+    display: none;
+  }
 }
 
-/* Stripe Form */
-.card-element-container {
-  padding: 1.2rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  margin-bottom: 1.5rem;
-}
+/* Stripe & Success Views */
+.stripe-note { text-align: center; font-size: 0.8rem; color: #888; margin-top: 1.5rem; }
+.success-view { height: 60vh; display: flex; align-items: center; justify-content: center; }
+.success-card { text-align: center; background: white; padding: 4rem; border-radius: 20px; box-shadow: var(--shadow-lg); max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+.success-card h2 { font-size: 2rem; }
+.success-card p { color: #666; margin-bottom: 1rem; }
 
-.card-element-container label {
-  display: block;
-  font-weight: 700;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  color: #888;
-  margin-bottom: 0.8rem;
-}
-
-.payment-error {
-  color: #e74c3c;
-  background: #fdf2f2;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.checkout-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.checkout-actions .outline-button {
-  flex: 1;
-  padding: 1.2rem;
-  border: 2px solid var(--text-dark);
-  border-radius: 8px;
-  font-weight: 700;
-}
-
-.stripe-note {
-  text-align: center;
-  font-size: 0.8rem;
-  color: #888;
-  margin-top: 1.5rem;
-}
-
-/* Success View */
-.success-view {
-  height: 60vh;
+/* AI Chatbot */
+.chatbot-bubble {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  z-index: 5000;
+  transition: var(--transition);
 }
 
-.success-card {
-  text-align: center;
+.chatbot-bubble:hover { transform: scale(1.1); }
+
+.chatbot-window {
+  position: fixed;
+  bottom: 6rem;
+  right: 2rem;
+  width: 380px;
+  height: 500px;
   background: white;
-  padding: 4rem;
-  border-radius: 20px;
-  box-shadow: var(--shadow-lg);
-  max-width: 500px;
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  z-index: 5000;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.chat-header {
+  background: var(--secondary);
+  color: white;
+  padding: 1.2rem;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 1.5rem;
 }
 
-.success-card h2 {
-  font-size: 2rem;
+.chat-messages {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.success-card p {
-  color: #666;
-  margin-bottom: 1rem;
+.msg {
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  max-width: 80%;
+  font-size: 0.9rem;
 }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+.msg.ai { background: #f0f0f0; align-self: flex-start; }
+.msg.user { background: var(--primary); color: white; align-self: flex-end; }
+
+.chat-input-area {
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input-area input {
+  flex: 1;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.chat-send-btn {
+  background: var(--primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+}
+
+@media (max-width: 480px) {
+  .chatbot-window {
+    width: calc(100% - 2rem);
+    right: 1rem;
+    bottom: 5rem;
+  }
+}
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .error-box {
