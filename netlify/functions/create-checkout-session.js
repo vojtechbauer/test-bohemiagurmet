@@ -1,22 +1,25 @@
-const express = require('express');
-const serverless = require('serverless-http');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const cors = require('cors');
+import Stripe from 'stripe';
 
-const app = express();
-const router = express.Router();
+export const handler = async (event, context) => {
+  // Povolení pouze POST požadavků
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
 
-router.use(cors());
-router.use(express.json());
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-router.get('/health', (req, res) => res.send('API is live on Netlify'));
-
-router.post('/create-checkout-session', async (req, res) => {
   try {
-    const { items, origin } = req.body;
+    const { items, origin } = JSON.parse(event.body);
 
     if (!items || items.length === 0) {
-      return res.status(400).json({ error: 'Kosik je prazdny' });
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Kosik je prazdny' })
+      };
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY chybi v nastaveni Netlify!');
     }
 
     const lineItems = items.map((item) => ({
@@ -31,6 +34,7 @@ router.post('/create-checkout-session', async (req, res) => {
       quantity: 1,
     }));
 
+    // Doprava
     lineItems.push({
       price_data: {
         currency: 'czk',
@@ -48,13 +52,16 @@ router.post('/create-checkout-session', async (req, res) => {
       cancel_url: `${origin}/?canceled=true`,
     });
 
-    res.json({ url: session.url });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ url: session.url })
+    };
+
   } catch (error) {
     console.error('STRIPE ERROR:', error.message);
-    res.status(500).json({ error: error.message });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
   }
-});
-
-app.use('/.netlify/functions/api', router);
-
-export const handler = serverless(app);
+};

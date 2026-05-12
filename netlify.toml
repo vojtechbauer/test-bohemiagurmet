@@ -3,6 +3,6 @@
   functions = "netlify/functions"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  from = "/api/create-checkout-session"
+  to = "/.netlify/functions/create-checkout-session"
   status = 200
