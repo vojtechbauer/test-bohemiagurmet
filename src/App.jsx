@@ -63,7 +63,7 @@ function App() {
     setIsAiLoading(true);
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const prompt = `Jsi asistent luxusního českého e-shopu Bohemia Gourmet. Odpovídej česky, zdvořile a prémiově. 
       Naše produkty: ${products.map(p => p.name).join(', ')}. 
       Uživatel se ptá: ${userInput}`;
@@ -72,7 +72,8 @@ function App() {
       const response = await result.response;
       setChatMessages([...newMsgs, { role: 'ai', text: response.text() }]);
     } catch (error) {
-      setChatMessages([...newMsgs, { role: 'ai', text: 'Omlouvám se, momentálně mám výpadek. Zkuste to prosím později.' }]);
+      console.error('GEMINI API ERROR:', error);
+      setChatMessages([...newMsgs, { role: 'ai', text: `Chyba: ${error.message || 'Omlouvám se, momentálně mám výpadek.'}` }]);
     } finally {
       setIsAiLoading(false);
     }
