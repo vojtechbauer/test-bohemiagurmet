@@ -96,12 +96,10 @@ function App() {
 
       const session = await response.json();
 
-      const result = await stripe.redirectToCheckout({
-        sessionId: session.id,
-      });
-
-      if (result.error) {
-        alert(result.error.message);
+      if (session.url) {
+        window.location.href = session.url;
+      } else {
+        alert('Chyba: Server nevrátil platební URL.');
       }
     } catch (error) {
       console.error('Checkout error:', error);
