@@ -367,3 +367,91 @@
   .table-header span:nth-child(2), .table-row span:nth-child(2), .table-header span:nth-child(3), .table-row span:nth-child(3) { display: none; }
   .cart-drawer { width: 100%; }
 }
+
+/* Stripe Form */
+.card-element-container {
+  padding: 1.2rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  margin-bottom: 1.5rem;
+}
+
+.card-element-container label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 0.8rem;
+}
+
+.payment-error {
+  color: #e74c3c;
+  background: #fdf2f2;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.checkout-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.checkout-actions .outline-button {
+  flex: 1;
+  padding: 1.2rem;
+  border: 2px solid var(--text-dark);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.stripe-note {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 1.5rem;
+}
+
+/* Success View */
+.success-view {
+  height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-card {
+  text-align: center;
+  background: white;
+  padding: 4rem;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.success-card h2 {
+  font-size: 2rem;
+}
+
+.success-card p {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

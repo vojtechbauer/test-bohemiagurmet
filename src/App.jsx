@@ -1,10 +1,78 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
   ShoppingCart, Menu, X, ChevronRight, Star, Heart, 
   MapPin, Users, Info, ArrowRight, CheckCircle2, 
-  Settings, Plus, Trash2, Edit2, Save, Package, CreditCard, Truck
+  Settings, Plus, Trash2, Edit2, Save, Package, CreditCard, Truck, Loader2
 } from 'lucide-react';
 import './App.css';
+
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+// Checkout Form Component
+const CheckoutForm = ({ total, onSuccess, onBack }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    setError(null);
+
+    // In a real app, you would create a PaymentIntent on your server
+    // Here we simulate the process for the demo
+    const cardElement = elements.getElement(CardElement);
+
+    const { error, paymentMethod } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+    });
+
+    if (error) {
+      setError(error.message);
+      setProcessing(false);
+    } else {
+      console.log('[PaymentMethod]', paymentMethod);
+      // Simulate backend success
+      setTimeout(() => {
+        setProcessing(false);
+        onSuccess();
+      }, 2000);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="premium-form stripe-form">
+      <div className="card-element-container">
+        <label>Informace o kartě</label>
+        <CardElement options={{
+          style: {
+            base: {
+              fontSize: '16px',
+              color: '#1A1A1A',
+              '::placeholder': { color: '#aab7c4' },
+            },
+            invalid: { color: '#9e2146' },
+          },
+        }} />
+      </div>
+      {error && <div className="payment-error">{error}</div>}
+      <div className="checkout-actions">
+        <button type="button" className="outline-button" onClick={onBack}>Zpět</button>
+        <button type="submit" disabled={!stripe || processing} className="pay-button">
+          {processing ? <><Loader2 className="animate-spin" /> Zpracovávám...</> : `Zaplatit ${total} Kč`}
+        </button>
+      </div>
+      <p className="stripe-note">Zabezpečené platby zajišťuje Stripe. Vaše údaje jsou v bezpečí.</p>
+    </form>
+  );
+};
 
 // Initial Mock Data
 const INITIAL_PRODUCTS = [
@@ -43,23 +111,13 @@ const INITIAL_PRODUCTS = [
 const CATEGORIES = ['Vše', 'Pekárna', 'Maso', 'Mléčné výrobky', 'Zahrada', 'Spíž'];
 
 function App() {
-  // Global State
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [view, setView] = useState('shop'); // 'shop', 'checkout', 'admin'
+  const [view, setView] = useState('shop'); // 'shop', 'checkout', 'admin', 'success'
   const [scrolled, setScrolled] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Vše');
-  const [wishlist, setWishlist] = useState([]);
-  
-  // Checkout State
-  const [checkoutData, setCheckoutData] = useState({ name: '', email: '', address: '', city: '' });
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Admin State
   const [editingProduct, setEditingProduct] = useState(null);
-
-  const productsRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -67,7 +125,6 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Cart Functions
   const addToCart = (product) => {
     setCart([...cart, product]);
     setIsCartOpen(true);
@@ -80,11 +137,6 @@ function App() {
   };
 
   const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
-
-  // Admin Functions
-  const deleteProduct = (id) => {
-    setProducts(products.filter(p => p.id !== id));
-  };
 
   const saveProduct = (e) => {
     e.preventDefault();
@@ -120,25 +172,18 @@ function App() {
     }
   };
 
-  // Views
   const renderShop = () => {
-    const filteredProducts = activeCategory === 'Vše' 
-      ? products 
-      : products.filter(p => p.category === activeCategory);
-
+    const filteredProducts = activeCategory === 'Vše' ? products : products.filter(p => p.category === activeCategory);
     return (
       <>
         <section className="hero">
           <div className="hero-overlay"></div>
           <div className="container hero-content">
-            <h1 className="fade-in">To nejlepší z české země <br/>přímo k vám domů.</h1>
-            <p className="fade-in">Výběrové potraviny od lokálních farmářů doručené s péčí až k vašim dveřím.</p>
-            <button className="cta-button fade-in" onClick={() => productsRef.current?.scrollIntoView({ behavior: 'smooth' })}>
-              Prozkoumat nabídku <ChevronRight size={20} />
-            </button>
+            <h1>To nejlepší z české země <br/>přímo k vám domů.</h1>
+            <p>Výběrové potraviny od lokálních farmářů doručené s péčí až k vašim dveřím.</p>
+            <button className="cta-button" onClick={() => document.getElementById('kategorie').scrollIntoView({ behavior: 'smooth' })}>Prozkoumat nabídku</button>
           </div>
         </section>
-
         <section className="categories container" id="kategorie">
           <div className="category-tabs">
             {CATEGORIES.map(cat => (
@@ -148,8 +193,7 @@ function App() {
             ))}
           </div>
         </section>
-
-        <section className="products container" ref={productsRef}>
+        <section className="products container">
           <div className="product-grid">
             {filteredProducts.map(product => (
               <div key={product.id} className="product-card">
@@ -164,9 +208,7 @@ function App() {
                   </div>
                   <h3>{product.name}</h3>
                   <p className="producer">{product.producer}</p>
-                  <div className="product-footer">
-                    <span className="price">{product.price} Kč</span>
-                  </div>
+                  <div className="product-footer"><span className="price">{product.price} Kč</span></div>
                 </div>
               </div>
             ))}
@@ -180,39 +222,14 @@ function App() {
     <section className="checkout-view container fade-in">
       <div className="checkout-grid">
         <div className="checkout-form-section">
-          <h2>Doručovací údaje</h2>
-          <form className="premium-form">
-            <div className="form-group">
-              <label>Jméno a příjmení</label>
-              <input type="text" placeholder="Jan Novák" />
-            </div>
-            <div className="form-group">
-              <label>E-mail</label>
-              <input type="email" placeholder="jan@seznam.cz" />
-            </div>
-            <div className="form-group">
-              <label>Adresa doručení</label>
-              <input type="text" placeholder="Ulice 123, Praha" />
-            </div>
-            <div className="shipping-methods">
-              <h3>Doprava</h3>
-              <div className="method-card active">
-                <Truck size={20} />
-                <div>
-                  <span>Kurýr Bohemia</span>
-                  <small>Doručení zítra</small>
-                </div>
-                <span>99 Kč</span>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              className="pay-button"
-              onClick={() => { setIsProcessing(true); setTimeout(() => { setView('shop'); setCart([]); setIsProcessing(false); alert('Přesměrování na Stripe...'); }, 2000); }}
-            >
-              {isProcessing ? 'Propojování se Stripe...' : `Zaplatit ${totalPrice + 99} Kč`}
-            </button>
-          </form>
+          <h2>Pokladna</h2>
+          <Elements stripe={stripePromise}>
+            <CheckoutForm 
+              total={totalPrice + 99} 
+              onSuccess={() => setView('success')}
+              onBack={() => setView('shop')}
+            />
+          </Elements>
         </div>
         <div className="checkout-summary">
           <h3>Shrnutí objednávky</h3>
@@ -222,15 +239,20 @@ function App() {
               <span>{item.price} Kč</span>
             </div>
           ))}
-          <div className="summary-total">
-            <span>Doprava</span>
-            <span>99 Kč</span>
-          </div>
-          <div className="summary-grand-total">
-            <span>Celkem</span>
-            <span>{totalPrice + 99} Kč</span>
-          </div>
+          <div className="summary-total"><span>Doprava</span><span>99 Kč</span></div>
+          <div className="summary-grand-total"><span>Celkem</span><span>{totalPrice + 99} Kč</span></div>
         </div>
+      </div>
+    </section>
+  );
+
+  const renderSuccess = () => (
+    <section className="success-view container fade-in">
+      <div className="success-card">
+        <CheckCircle2 size={80} color="var(--accent)" />
+        <h2>Platba proběhla úspěšně!</h2>
+        <p>Děkujeme za váš nákup. Potvrzení jsme odeslali na váš e-mail.</p>
+        <button className="cta-button" onClick={() => { setView('shop'); setCart([]); }}>Zpět do obchodu</button>
       </div>
     </section>
   );
@@ -241,14 +263,13 @@ function App() {
         <h1>Správa e-shopu</h1>
         <button className="add-btn" onClick={() => setEditingProduct({})}><Plus size={20} /> Přidat položku</button>
       </div>
-
       {editingProduct && (
         <div className="admin-modal">
           <form className="premium-form" onSubmit={saveProduct}>
             <h2>{editingProduct.id ? 'Upravit produkt' : 'Nový produkt'}</h2>
             <div className="form-row">
               <input name="name" defaultValue={editingProduct.name} placeholder="Název" required />
-              <input name="price" defaultValue={editingProduct.price} placeholder="Cena (Kč)" type="number" required />
+              <input name="price" defaultValue={editingProduct.price} placeholder="Cena" type="number" required />
             </div>
             <div className="form-row">
               <input name="producer" defaultValue={editingProduct.producer} placeholder="Výrobce" required />
@@ -257,44 +278,30 @@ function App() {
               </select>
             </div>
             <div className="form-row">
-              <input name="stock" defaultValue={editingProduct.stock} placeholder="Skladem (ks)" type="number" required />
+              <input name="stock" defaultValue={editingProduct.stock} placeholder="Sklad" type="number" required />
               <input name="origin" defaultValue={editingProduct.origin} placeholder="Původ" required />
             </div>
             <div className="form-group">
-              <label>Obrázek produktu</label>
+              <label>Obrázek</label>
               <input name="imageFile" type="file" accept="image/*" />
             </div>
             <div className="modal-actions">
               <button type="button" onClick={() => setEditingProduct(null)}>Zrušit</button>
-              <button type="submit" className="save-btn"><Save size={18} /> Uložit</button>
+              <button type="submit" className="save-btn">Uložit</button>
             </div>
           </form>
         </div>
       )}
-
       <div className="admin-table">
-        <div className="table-header">
-          <span>Produkt</span>
-          <span>Kategorie</span>
-          <span>Sklad</span>
-          <span>Cena</span>
-          <span>Akce</span>
-        </div>
+        <div className="table-header"><span>Produkt</span><span>Sklad</span><span>Cena</span><span>Akce</span></div>
         {products.map(p => (
           <div key={p.id} className="table-row">
-            <div className="p-info">
-              <img src={p.image} alt="" />
-              <div>
-                <strong>{p.name}</strong>
-                <small>{p.producer}</small>
-              </div>
-            </div>
-            <span>{p.category}</span>
-            <span className={p.stock < 5 ? 'low-stock' : ''}>{p.stock} ks</span>
+            <div className="p-info"><strong>{p.name}</strong><small>{p.producer}</small></div>
+            <span>{p.stock} ks</span>
             <strong>{p.price} Kč</strong>
             <div className="actions">
               <button onClick={() => setEditingProduct(p)}><Edit2 size={18} /></button>
-              <button onClick={() => deleteProduct(p.id)} className="delete"><Trash2 size={18} /></button>
+              <button onClick={() => setProducts(products.filter(item => item.id !== p.id))} className="delete"><Trash2 size={18} /></button>
             </div>
           </div>
         ))}
@@ -310,19 +317,11 @@ function App() {
             <span className="logo-main">BOHEMIA</span>
             <span className="logo-sub">GOURMET</span>
           </div>
-          
           <div className="nav-links">
-            {view === 'shop' && (
-              <>
-                <a href="#kategorie">Kategorie</a>
-                <a href="#vyrobci">Výrobci</a>
-              </>
-            )}
             <button className={`admin-link ${view === 'admin' ? 'active' : ''}`} onClick={() => setView(view === 'admin' ? 'shop' : 'admin')}>
               <Settings size={20} /> Admin
             </button>
           </div>
-
           <div className="nav-actions">
             <button className="cart-trigger" onClick={() => setIsCartOpen(true)}>
               <ShoppingCart size={24} />
@@ -331,57 +330,32 @@ function App() {
           </div>
         </div>
       </nav>
-
       <main style={{paddingTop: view === 'shop' ? '0' : '120px'}}>
         {view === 'shop' && renderShop()}
         {view === 'checkout' && renderCheckout()}
         {view === 'admin' && renderAdmin()}
+        {view === 'success' && renderSuccess()}
       </main>
-
-      {/* Cart Drawer */}
       <div className={`cart-drawer ${isCartOpen ? 'open' : ''}`}>
-        <div className="cart-header">
-          <h2>Košík</h2>
-          <button onClick={() => setIsCartOpen(false)}><X size={24} /></button>
-        </div>
+        <div className="cart-header"><h2>Košík</h2><button onClick={() => setIsCartOpen(false)}><X size={24} /></button></div>
         <div className="cart-items">
-          {cart.length === 0 ? (
-            <div className="empty-cart">
-              <ShoppingCart size={48} />
-              <p>Košík je prázdný</p>
+          {cart.map((item, idx) => (
+            <div key={idx} className="cart-item">
+              <img src={item.image} alt="" />
+              <div className="cart-item-info"><h4>{item.name}</h4><p>{item.price} Kč</p></div>
+              <button onClick={() => removeFromCart(idx)}><Trash2 size={16} /></button>
             </div>
-          ) : (
-            cart.map((item, idx) => (
-              <div key={idx} className="cart-item">
-                <img src={item.image} alt={item.name} />
-                <div className="cart-item-info">
-                  <h4>{item.name}</h4>
-                  <p>{item.price} Kč</p>
-                </div>
-                <button onClick={() => removeFromCart(idx)}><Trash2 size={16} /></button>
-              </div>
-            ))
-          )}
+          ))}
         </div>
         {cart.length > 0 && (
           <div className="cart-footer">
-            <div className="total">
-              <span>Celkem</span>
-              <span>{totalPrice} Kč</span>
-            </div>
-            <button className="checkout-btn" onClick={() => { setView('checkout'); setIsCartOpen(false); }}>
-              K pokladně <ArrowRight size={20} />
-            </button>
+            <div className="total"><span>Celkem</span><span>{totalPrice} Kč</span></div>
+            <button className="checkout-btn" onClick={() => { setView('checkout'); setIsCartOpen(false); }}>K pokladně</button>
           </div>
         )}
       </div>
       <div className={`overlay ${isCartOpen ? 'visible' : ''}`} onClick={() => setIsCartOpen(false)}></div>
-
-      <footer className="footer">
-        <div className="container footer-bottom">
-          <p>&copy; 2026 Bohemia Gourmet. Prémiové české potraviny.</p>
-        </div>
-      </footer>
+      <footer className="footer"><p>&copy; 2026 Bohemia Gourmet.</p></footer>
     </div>
   );
 }
